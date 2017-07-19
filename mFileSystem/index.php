@@ -1,11 +1,11 @@
 <?php
 
-define('__SHOWFILEPATH__', 'http://localhost/');
 define('__FILEROOT__', 'fileStore/');
 define('__ARCHIVEDIR__', 'document/');
 define('__OPENDIR__', 'show/');
 
 require_once 'classes/router.class.php';
+require_once 'classes/behavior.class.php';
 require_once 'Config/SqlDef.php';
 require_once 'ZConnect/PDO.php';
 require_once 'Config/SqlDef.php';
@@ -22,6 +22,26 @@ $router->add('/get_file', function() {
         echo 'Illegal param';
         exit();
     }
+    $querySize = 'N';
+    $customSize = array();
+    if (array_key_exists('size', $_GET) && !empty($_GET['size'])) {
+        switch (strtoupper($_GET['size'])) {
+            case 'C':
+                if (array_key_exists('w', $_GET) && !empty($_GET['w']) && array_key_exists('h', $_GET) && !empty($_GET['h'])) {
+                    array_push($customSize, intval($_GET['w']));
+                    array_push($customSize, intval($_GET['h']));
+                }
+                if (!is_int($customSize[0]) || !is_int($customSize[1]) || $customSize[0] <= 0 || $customSize[1] <= 0) {
+                    break;
+                }
+            case 'L':
+            case 'M':
+            case 'S':
+                $querySize = strtoupper($_GET['size']);
+                break;
+            default:break;
+        }
+    }
     $openId = $_GET['openid'];
     $con = new \ZFrame_Service\ZConnect();
     $linkRecord = $con->getLinkRecord($openId);
@@ -33,7 +53,19 @@ $router->add('/get_file', function() {
     $fileDir = $linkRecord[0]['upload_date'] . '/';
     $fileName = $linkRecord[0]['open_id'] . $linkRecord[0]['file_name'];
     if (strrpos($fileType, 'image/') !== FALSE || strrpos($fileType, 'text/') !== FALSE) {
-        echo __SHOWFILEPATH__ . $fileDir . $fileName;
+        if (!file_exists(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName)) {
+            echo 'No file';
+            exit();
+        }
+        if (strrpos($fileType, 'image/') !== FALSE && $querySize !== 'N') {
+            $behavir = new behavior($querySize, $customSize);
+            $fileDir = $behavir->queryFile($fileDir, $fileName);
+        }
+        Header("Content-type: " . $fileType);
+        Header("Accept-Ranges: bytes");
+        Header("Accept-Length: " . filesize(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName));
+        Header("Content-Transfer-Encoding: binary");
+        readfile(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName);
         exit();
     } else {
         if (!file_exists(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName)) {
@@ -47,6 +79,7 @@ $router->add('/get_file', function() {
         Header("Content-Disposition: attachment; filename=" . $fileName);
         echo fread($file, filesize(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName));
         fclose($file);
+        exit();
     }
 });
 
