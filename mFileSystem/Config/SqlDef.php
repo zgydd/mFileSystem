@@ -4,7 +4,7 @@
 // Initlize    20170124    Joe
 
 define('insert.linkRecord', <<<SQL
-    INSERT INTO files_link (
+    INSERT INTO md_stores_link (
         OPEN_ID, 
         STORE_URI,
         FILE_NAME,
@@ -21,6 +21,6 @@ SQL
 );
 
 define('select.linkRecord', <<<SQL
-    SELECT * FROM files_link WHERE open_id = :open_id
+    SELECT * FROM md_stores_link WHERE open_id = :open_id
 SQL
 );
