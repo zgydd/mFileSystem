@@ -51,7 +51,10 @@ $router->add('/get_file', function() {
     }
     $fileType = $linkRecord[0]['file_type'];
     $fileDir = $linkRecord[0]['upload_date'] . '/';
-    $fileName = $linkRecord[0]['open_id'] . $linkRecord[0]['file_name'];
+
+    $ext = pathinfo($linkRecord[0]['file_name'], PATHINFO_EXTENSION);
+    $fileName = $linkRecord[0]['open_id'] . '.' . $ext;
+
     if (strrpos($fileType, 'image/') !== FALSE || strrpos($fileType, 'text/') !== FALSE) {
         if (!file_exists(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName)) {
             echo 'No file';
@@ -59,6 +62,7 @@ $router->add('/get_file', function() {
         }
         if (strrpos($fileType, 'image/') !== FALSE && $querySize !== 'N') {
             $behavir = new behavior($querySize, $customSize);
+            $fileName = $linkRecord[0]['open_id'] . '.png';
             $fileDir = $behavir->queryFile($fileDir, $fileName);
         }
         Header("Content-type: " . $fileType);
@@ -76,7 +80,14 @@ $router->add('/get_file', function() {
         Header("Content-type: application/octet-stream");
         Header("Accept-Ranges: bytes");
         Header("Accept-Length: " . filesize(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName));
-        Header("Content-Disposition: attachment; filename=" . $fileName);
+        $dlFileName = '';
+        if (!is_null($linkRecord[0]['file_name']) && !empty($linkRecord[0]['file_name'])) {
+            $dlFileName = $linkRecord[0]['file_name'];
+        } else {
+            $dlFileName = $file;
+        }
+
+        Header("Content-Disposition: attachment; filename=" . $dlFileName);
         echo fread($file, filesize(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName));
         fclose($file);
         exit();
@@ -125,7 +136,10 @@ $router->add('/upload_file', function() {
         if (!file_exists('fileStore/' . $target . date('Ymd'))) {
             mkdir('fileStore/' . $target . date('Ymd'));
         }
-        $result = move_uploaded_file($_FILES["file"]["tmp_name"], 'fileStore/' . $target . date('Ymd') . '/' . $openID . $fileName);
+
+        $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+
+        $result = move_uploaded_file($_FILES["file"]["tmp_name"], 'fileStore/' . $target . date('Ymd') . '/' . $openID . '.' . $ext);
         $stat = $pdo->prepare(constant("insert.linkRecord"));
         $stat->execute(array(
             ':open_id' => $openID,

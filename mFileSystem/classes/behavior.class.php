@@ -20,13 +20,13 @@ class behavior {
         $this->size = $size;
         switch ($size) {
             case 'L':
-                array_push($this->customSize, 48, 48);
+                array_push($this->customSize, 120, 120);
                 break;
             case 'M':
-                array_push($this->customSize, 32, 32);
+                array_push($this->customSize, 60, 60);
                 break;
             case 'S':
-                array_push($this->customSize, 16, 16);
+                array_push($this->customSize, 40, 40);
                 break;
             case 'C':
                 $this->customSize = $customSize;
