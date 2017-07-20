@@ -62,8 +62,8 @@ $router->add('/get_file', function() {
         }
         if (strrpos($fileType, 'image/') !== FALSE && $querySize !== 'N') {
             $behavir = new behavior($querySize, $customSize);
-            $fileName = $linkRecord[0]['open_id'] . '.png';
             $fileDir = $behavir->queryFile($fileDir, $fileName);
+            $fileName = $linkRecord[0]['open_id'] . '.png';
         }
         Header("Content-type: " . $fileType);
         Header("Accept-Ranges: bytes");
