@@ -104,9 +104,13 @@ $router->add('/upload_file', function() {
     if (is_array($_POST)) {
         if (array_key_exists('fileName', $_POST) && !empty($_POST['fileName'])) {
             $fileName = $_POST['fileName'];
+        } else if (is_array($_FILES["file"]) && array_key_exists('name', $_FILES["file"]) && !empty($_FILES["file"]["name"])) {
+            $fileName = $_FILES["file"]["name"];
         }
         if (array_key_exists('fileType', $_POST) && !empty($_POST['fileType'])) {
             $fileType = $_POST['fileType'];
+        } else if (is_array($_FILES["file"]) && array_key_exists('type', $_FILES["file"]) && !empty($_FILES["file"]["type"])) {
+            $fileType = $_FILES["file"]["type"];
         }
     }
     $con = new \ZFrame_Service\ZConnect();
