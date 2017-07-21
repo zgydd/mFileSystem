@@ -4,6 +4,9 @@ define('__FILEROOT__', 'fileStore/');
 define('__ARCHIVEDIR__', 'document/');
 define('__OPENDIR__', 'show/');
 
+$showFiles = json_encode(array('image/', 'text/', 'video/'));
+define('_SHOWFILETYPE_', $showFiles);
+
 require_once 'classes/router.class.php';
 require_once 'classes/behavior.class.php';
 require_once 'Config/SqlDef.php';
@@ -55,7 +58,15 @@ $router->add('/get_file', function() {
     $ext = pathinfo($linkRecord[0]['file_name'], PATHINFO_EXTENSION);
     $fileName = $linkRecord[0]['open_id'] . '.' . $ext;
 
-    if (strrpos($fileType, 'image/') !== FALSE || strrpos($fileType, 'text/') !== FALSE) {
+    $arrShow = json_decode(_SHOWFILETYPE_);
+    $inShow = FALSE;
+    foreach ($arrShow as $value) {
+        if (strrpos($fileType, $value) !== FALSE) {
+            $inShow = TRUE;
+            break;
+        }
+    }
+    if ($inShow) {
         if (!file_exists(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName)) {
             echo 'No file';
             exit();
@@ -128,7 +139,15 @@ $router->add('/upload_file', function() {
     $pdo->beginTransaction();
     try {
         $target = __ARCHIVEDIR__;
-        if (strrpos($fileType, 'image/') !== FALSE || strrpos($fileType, 'text/') !== FALSE) {
+        $arrShow = json_decode(_SHOWFILETYPE_);
+        $inShow = FALSE;
+        foreach ($arrShow as $value) {
+            if (strrpos($fileType, $value) !== FALSE) {
+                $inShow = TRUE;
+                break;
+            }
+        }
+        if ($inShow) {
             $target = __OPENDIR__;
         }
         if (!file_exists('fileStore/')) {
