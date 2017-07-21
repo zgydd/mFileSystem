@@ -66,7 +66,15 @@ if ($_FILES["file"]["error"] > 0) {
         exit();
     }
 
-    $upFile = array("file" => new CURLFile($_FILES["file"]["tmp_name"]), "fileName" => $_FILES["file"]["name"], "fileType" => $_FILES["file"]["type"]);
+    $upFile = array();
+
+    if (class_exists('\CURLFile')) {
+        $upFile['file'] = new CURLFile($_FILES["file"]["tmp_name"]);
+    } else {
+        $upFile['file'] = '@' . realpath($_FILES["file"]["tmp_name"]);
+    }
+    $upFile['fileName'] = $_FILES["file"]["name"];
+    $upFile['fileType'] = $_FILES["file"]["type"];
 
     $curl = curl_init("http://localhost:16820/index.php/upload_file");
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 0);
