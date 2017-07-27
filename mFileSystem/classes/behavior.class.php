@@ -38,7 +38,6 @@ class behavior {
     public function queryFile($fileDir, $fileName) {
         $srcImg = __FILEROOT__ . __OPENDIR__ . $fileDir . $fileName;
         $fileDir = $fileDir . 'thumb' . $this->size;
-
         if ($this->size === 'C' && count($this->customSize) === 2) {
             $fileDir .= '_' . $this->customSize[0] . '_' . $this->customSize[1];
         }

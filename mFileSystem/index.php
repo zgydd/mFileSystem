@@ -13,16 +13,20 @@ require_once 'Config/SqlDef.php';
 require_once 'ZConnect/PDO.php';
 require_once 'Config/SqlDef.php';
 
-$router = new router();
 
+$router = new router();
 $router->add('/request_size', function() {
     echo disk_free_space('/');
     exit();
 });
 
 $router->add('/get_file', function() {
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
     if (!array_key_exists('openid', $_GET) || empty($_GET['openid'])) {
-        echo 'Illegal param';
+        $result->ReturnCode = '10022';
+        $result->ErrorMessage = 'Illegal param';
+        echo json_encode($result);
         exit();
     }
     $querySize = 'N';
@@ -30,11 +34,17 @@ $router->add('/get_file', function() {
     if (array_key_exists('size', $_GET) && !empty($_GET['size'])) {
         switch (strtoupper($_GET['size'])) {
             case 'C':
-                if (array_key_exists('w', $_GET) && !empty($_GET['w']) && array_key_exists('h', $_GET) && !empty($_GET['h'])) {
+                if (array_key_exists('w', $_GET) && !empty($_GET['w'])) {
                     array_push($customSize, intval($_GET['w']));
-                    array_push($customSize, intval($_GET['h']));
+                } else {
+                    array_push($customSize, 0);
                 }
-                if (!is_int($customSize[0]) || !is_int($customSize[1]) || $customSize[0] <= 0 || $customSize[1] <= 0) {
+                if (array_key_exists('h', $_GET) && !empty($_GET['h'])) {
+                    array_push($customSize, intval($_GET['h']));
+                } else {
+                    array_push($customSize, 0);
+                }
+                if ((!array_key_exists('w', $_GET) || empty($_GET['w'])) && (!array_key_exists('h', $_GET) || empty($_GET['h']))) {
                     break;
                 }
             case 'L':
@@ -49,7 +59,9 @@ $router->add('/get_file', function() {
     $con = new \ZFrame_Service\ZConnect();
     $linkRecord = $con->getLinkRecord($openId);
     if (is_null($linkRecord) || empty($linkRecord) || count($linkRecord) <= 0) {
-        echo 'No record';
+        $result->ReturnCode = '10013';
+        $result->ErrorMessage = 'No record found';
+        echo json_encode($result);
         exit();
     }
     $fileType = $linkRecord[0]['file_type'];
@@ -68,7 +80,9 @@ $router->add('/get_file', function() {
     }
     if ($inShow) {
         if (!file_exists(__FILEROOT__ . __OPENDIR__ . $fileDir . $fileName)) {
-            echo 'No file';
+            $result->ReturnCode = '10014';
+            $result->ErrorMessage = 'File does not exist';
+            echo json_encode($result);
             exit();
         }
         if (strrpos($fileType, 'image/') !== FALSE && $querySize !== 'N') {
@@ -84,7 +98,9 @@ $router->add('/get_file', function() {
         exit();
     } else {
         if (!file_exists(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName)) {
-            echo 'No file';
+            $result->ReturnCode = '10014';
+            $result->ErrorMessage = 'File does not exist';
+            echo json_encode($result);
             exit();
         }
         $file = fopen(__FILEROOT__ . __ARCHIVEDIR__ . $fileDir . $fileName, "r");
@@ -106,8 +122,12 @@ $router->add('/get_file', function() {
 });
 
 $router->add('/upload_file', function() {
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
     if (!array_key_exists('file', $_FILES)) {
-        echo 'noFile';
+        $result->ReturnCode = '10022';
+        $result->ErrorMessage = 'No upload file';
+        echo json_encode($result);
         exit();
     }
     $fileName = 'tmpFile.tmp';
@@ -124,6 +144,7 @@ $router->add('/upload_file', function() {
             $fileType = $_FILES["file"]["type"];
         }
     }
+
     $con = new \ZFrame_Service\ZConnect();
 
     $openID = null;
@@ -134,7 +155,6 @@ $router->add('/upload_file', function() {
     }
     $openID .= date('Ymd');
     $openID .= md5($openID);
-
     $pdo = $con->_getPdo();
     $pdo->beginTransaction();
     try {
@@ -161,8 +181,7 @@ $router->add('/upload_file', function() {
         }
 
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-
-        $result = move_uploaded_file($_FILES["file"]["tmp_name"], 'fileStore/' . $target . date('Ymd') . '/' . $openID . '.' . $ext);
+        $movResult = move_uploaded_file($_FILES["file"]["tmp_name"], 'fileStore/' . $target . date('Ymd') . '/' . $openID . '.' . $ext);
         $stat = $pdo->prepare(constant("insert.linkRecord"));
         $stat->execute(array(
             ':open_id' => $openID,
@@ -171,24 +190,58 @@ $router->add('/upload_file', function() {
             ':upload_date' => date('Ymd'),
             ':file_type' => $fileType));
         //$pdo->lastInsertId();
-        if (!$result) {
+        if (!$movResult) {
             $pdo->rollBack();
-            echo 'No result';
+            $result->ReturnCode = '10026';
+            $result->ErrorMessage = 'Move upload file failure';
+            echo json_encode($result);
         } else {
             $pdo->commit();
-            echo $openID;
+            $result->ReturnCode = '200';
+            $result->ErrorMessage = 'OK';
+            $result->OpenId = $openID;
+            echo json_encode($result);
         }
+        $con->_destroyPdo();
+        $con = null;
     } catch (Exception $e) {
         $pdo->rollBack();
-        echo $e;
-    } finally {
+        $result->ReturnCode = '10000';
+        $result->ErrorMessage = 'Undefined error - ' . $e;
+        echo json_encode($result);
         $con->_destroyPdo();
         $con = null;
     }
 });
 
+$router->add('/del_file', function() {
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
+    if (!array_key_exists('openid', $_GET) || empty($_GET['openid'])) {
+        $result->ReturnCode = '10022';
+        $result->ErrorMessage = 'Illegal param';
+        echo json_encode($result);
+        exit();
+    }
+    $openId = $_GET['openid'];
+    $con = new \ZFrame_Service\ZConnect();
+    $delResult = $con->recycLinkRecord($openId);
+    if ($delResult) {
+        $result->ReturnCode = '200';
+        $result->ErrorMessage = 'OK';
+    } else {
+        $result->ReturnCode = '10016';
+        $result->ErrorMessage = 'Recycle fail';
+    }
+    echo json_encode($result);
+});
+
 $router->add('default', function() {
-    echo 'Illegal request';
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
+    $result->ReturnCode = '10001';
+    $result->ErrorMessage = 'Illegal request';
+    echo json_encode($result);
     exit();
 });
 

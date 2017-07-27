@@ -21,6 +21,11 @@ SQL
 );
 
 define('select.linkRecord', <<<SQL
-    SELECT * FROM md_stores_link WHERE open_id = :open_id
+    SELECT * FROM md_stores_link WHERE open_id = :open_id AND recyc_flg = 0
+SQL
+);
+
+define('select.recycLinkRecord', <<<SQL
+    UPDATE md_stores_link SET recyc_flg = 1 WHERE open_id = :open_id
 SQL
 );

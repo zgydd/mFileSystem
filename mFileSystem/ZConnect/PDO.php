@@ -17,7 +17,7 @@ class ZConnect {
 
         $conCfg = $objConst->getDBCon();
 
-        $conStr = $conCfg->type . ":host=" . $conCfg->host . ":"
+        $conStr = $conCfg->type . ":host=" . $conCfg->host . ";port="
                 . $conCfg->port . ";dbname=" . $conCfg->dbname;
 
         $this->pdo = new \PDO($conStr, $conCfg->user, $conCfg->pwd);
@@ -42,6 +42,12 @@ class ZConnect {
         $stat->execute(array(':open_id' => $open_id));
         $record = $stat->fetchAll();
         $stat->closeCursor();
+        return $record;
+    }
+
+    public function recycLinkRecord($open_id) {
+        $stat = $this->pdo->prepare(constant("select.recycLinkRecord"));
+        $record = $stat->execute(array(':open_id' => $open_id));
         return $record;
     }
 
