@@ -13,11 +13,75 @@ require_once 'Config/SqlDef.php';
 require_once 'ZConnect/PDO.php';
 require_once 'Config/SqlDef.php';
 
-
 $router = new router();
+
 $router->add('/request_size', function() {
     echo disk_free_space('/');
     exit();
+});
+
+$router->add('/get_filestream', function() {
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
+    if (!array_key_exists('openid', $_GET) || empty($_GET['openid'])) {
+        $result->ReturnCode = '10022';
+        $result->ErrorMessage = 'Illegal param';
+        echo json_encode($result);
+        exit();
+    }
+    $openId = $_GET['openid'];
+    $con = new \ZFrame_Service\ZConnect();
+    $linkRecord = $con->getLinkRecord($openId);
+    if (is_null($linkRecord) || empty($linkRecord) || count($linkRecord) <= 0) {
+        $result->ReturnCode = '10013';
+        $result->ErrorMessage = 'No record found';
+        echo json_encode($result);
+        exit();
+    }
+    $fileType = $linkRecord[0]['file_type'];
+    $fileDir = $linkRecord[0]['upload_date'] . '/';
+
+    $ext = pathinfo($linkRecord[0]['file_name'], PATHINFO_EXTENSION);
+    $fileName = $linkRecord[0]['open_id'] . '.' . $ext;
+
+    $arrShow = json_decode(_SHOWFILETYPE_);
+    $inShow = FALSE;
+    $realFliePath = __FILEROOT__;
+    foreach ($arrShow as $value) {
+        if (strrpos($fileType, $value) !== FALSE) {
+            $inShow = TRUE;
+            break;
+        }
+    }
+    if ($inShow) {
+        $realFliePath .= __OPENDIR__;
+    } else {
+        $realFliePath .= __ARCHIVEDIR__;
+    }
+    $realFliePath .= $fileDir . $fileName;
+    if (!file_exists($realFliePath) || !is_file($realFliePath)) {
+        $result->ReturnCode = '10014';
+        $result->ErrorMessage = 'File does not exist';
+        echo json_encode($result);
+        exit();
+    }
+    $start = 0;
+    $end = filesize($realFliePath);
+    if (array_key_exists('begin', $_GET) && !empty($_GET['begin']) && intval($_GET['begin']) > 0) {
+        $start = intval($_GET['begin']);
+    }
+    if (array_key_exists('length', $_GET) && !empty($_GET['length'])) {
+        $c_end = $start + intval($_GET['length']);
+        if ($c_end < $end) {
+            $end = $c_end;
+        }
+    }
+    $length = $end - $start + 1;
+    $fp = @fopen($realFliePath, 'rb');
+    fseek($fp, $start);
+    echo fread($fp, $length);
+    flush();
+    fclose($realFliePath);
 });
 
 $router->add('/get_file', function() {
@@ -202,6 +266,33 @@ $router->add('/upload_file', function() {
 
     $con = new \ZFrame_Service\ZConnect();
 
+    $skipFlg = false;
+    $fileMd5 = md5_file($_FILES["file"]["tmp_name"]);
+    $linkRecord = $con->getLinkRecordByMd5($fileMd5);
+    if (count($linkRecord)) {
+        $skipFlg = true;
+        $openId = $linkRecord[0]['open_id'];
+        if ($linkRecord[0]['recyc_flg'] === '1') {
+            $recoverResult = $con->recoverLinkRecord($openId);
+            if ($recoverResult) {
+                $result->ReturnCode = '200';
+                $result->ErrorMessage = 'OK';
+                $result->OpenId = $openId;
+                echo json_encode($result);
+                exit();
+            } else {
+                $skipFlg = false;
+            }
+        }
+        if ($skipFlg) {
+            $result->ReturnCode = '10060';
+            $result->ErrorMessage = 'File exists';
+            $result->OpenId = $openId;
+            echo json_encode($result);
+            exit();
+        }
+    }
+
     $openID = null;
     $strPol = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
     $max = strlen($strPol) - 1;
@@ -243,7 +334,8 @@ $router->add('/upload_file', function() {
             ':store_uri' => $_SERVER["HTTP_HOST"],
             ':file_name' => $fileName,
             ':upload_date' => date('Ymd'),
-            ':file_type' => $fileType));
+            ':file_type' => $fileType,
+            ':file_md5' => $fileMd5));
         //$pdo->lastInsertId();
         if (!$movResult) {
             $pdo->rollBack();
@@ -257,13 +349,12 @@ $router->add('/upload_file', function() {
             $result->OpenId = $openID;
             echo json_encode($result);
         }
-        $con->_destroyPdo();
-        $con = null;
     } catch (Exception $e) {
         $pdo->rollBack();
         $result->ReturnCode = '10000';
         $result->ErrorMessage = 'Undefined error - ' . $e;
         echo json_encode($result);
+    } finally {
         $con->_destroyPdo();
         $con = null;
     }

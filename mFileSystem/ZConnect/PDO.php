@@ -45,8 +45,22 @@ class ZConnect {
         return $record;
     }
 
+    public function getLinkRecordByMd5($file_md5) {
+        $stat = $this->pdo->prepare(constant("select.linkRecordByMd5"));
+        $stat->execute(array(':file_md5' => $file_md5));
+        $record = $stat->fetchAll();
+        $stat->closeCursor();
+        return $record;
+    }
+
     public function recycLinkRecord($open_id) {
-        $stat = $this->pdo->prepare(constant("select.recycLinkRecord"));
+        $stat = $this->pdo->prepare(constant("update.recycLinkRecord"));
+        $record = $stat->execute(array(':open_id' => $open_id));
+        return $record;
+    }
+
+    public function recoverLinkRecord($open_id) {
+        $stat = $this->pdo->prepare(constant("update.recoverLinkRecord"));
         $record = $stat->execute(array(':open_id' => $open_id));
         return $record;
     }
