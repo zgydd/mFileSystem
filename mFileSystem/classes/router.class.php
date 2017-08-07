@@ -19,7 +19,7 @@ class router {
 
     public function __construct() {
         $this->method = $_SERVER['REQUEST_METHOD'];
-        $this->url = str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['PHP_SELF']);
+        $this->url = str_replace('//', '/', str_replace($_SERVER['SCRIPT_NAME'], '', $_SERVER['PHP_SELF']));
     }
 
     public function add($route, $callback) {

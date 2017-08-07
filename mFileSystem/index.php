@@ -316,18 +316,18 @@ $router->add('/upload_file', function() {
         if ($inShow) {
             $target = __OPENDIR__;
         }
-        if (!file_exists('fileStore/')) {
-            mkdir('fileStore/');
+        if (!file_exists(__FILEROOT__)) {
+            mkdir(__FILEROOT__);
         }
-        if (!file_exists('fileStore/' . $target)) {
-            mkdir('fileStore/' . $target);
+        if (!file_exists(__FILEROOT__ . $target)) {
+            mkdir(__FILEROOT__ . $target);
         }
-        if (!file_exists('fileStore/' . $target . date('Ymd'))) {
-            mkdir('fileStore/' . $target . date('Ymd'));
+        if (!file_exists(__FILEROOT__ . $target . date('Ymd'))) {
+            mkdir(__FILEROOT__ . $target . date('Ymd'));
         }
 
         $ext = pathinfo($fileName, PATHINFO_EXTENSION);
-        $movResult = move_uploaded_file($_FILES["file"]["tmp_name"], 'fileStore/' . $target . date('Ymd') . '/' . $openID . '.' . $ext);
+        $movResult = move_uploaded_file($_FILES["file"]["tmp_name"], __FILEROOT__ . $target . date('Ymd') . '/' . $openID . '.' . $ext);
         $stat = $pdo->prepare(constant("insert.linkRecord"));
         $stat->execute(array(
             ':open_id' => $openID,
@@ -380,6 +380,59 @@ $router->add('/del_file', function() {
         $result->ErrorMessage = 'Recycle fail';
     }
     echo json_encode($result);
+});
+
+
+$router->add('/get_video_thumb', function() {
+    $result = new \stdClass();
+    $result->Date = date('Y-m-d H:i:s');
+    if (!array_key_exists('openid', $_GET) || empty($_GET['openid'])) {
+        $result->ReturnCode = '10022';
+        $result->ErrorMessage = 'Illegal param';
+        echo json_encode($result);
+        exit();
+    }
+    $openId = $_GET['openid'];
+    $con = new \ZFrame_Service\ZConnect();
+    $linkRecord = $con->getLinkRecord($openId);
+    if (is_null($linkRecord) || empty($linkRecord) || count($linkRecord) <= 0) {
+        $result->ReturnCode = '10013';
+        $result->ErrorMessage = 'No record found';
+        echo json_encode($result);
+        exit();
+    }
+    $fileType = $linkRecord[0]['file_type'];
+    $fileDir = $linkRecord[0]['upload_date'] . '/';
+
+    $ext = pathinfo($linkRecord[0]['file_name'], PATHINFO_EXTENSION);
+    $fileName = $linkRecord[0]['open_id'] . '.' . $ext;
+
+    if (strrpos($fileType, 'video/') === FALSE) {
+        $result->ReturnCode = '10099';
+        $result->ErrorMessage = 'Not video';
+        echo json_encode($result);
+        exit();
+    }
+    $srcFilePath = __FILEROOT__ . __OPENDIR__ . $fileDir . $fileName;
+    if (!file_exists($srcFilePath)) {
+        $result->ReturnCode = '10014';
+        $result->ErrorMessage = 'File does not exist';
+        echo json_encode($result);
+        exit();
+    }
+    $videoThumbPath = __FILEROOT__ . __OPENDIR__ . $fileDir . 'videoThumb/';
+    if (!file_exists($videoThumbPath)) {
+        mkdir($videoThumbPath);
+    }
+    $videoThumbPath .= $linkRecord[0]['open_id'] . '.jpg';
+    if (!file_exists($videoThumbPath)) {
+        $behavir = new behavior('N', null);
+        $result = $behavir->getVideoCover($srcFilePath, 1, $videoThumbPath);
+    }
+    $size = filesize($videoThumbPath); // File size
+    header("Content-type: image/jpeg");
+    header("Content-Length: $size");
+    readfile($videoThumbPath);
 });
 
 $router->add('default', function() {
