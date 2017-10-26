@@ -71,7 +71,7 @@ class behavior {
         try {
             //$strlen = strlen($file);
             //exec("ffmpeg -i ".$file." -y -f mjpeg -ss ".$time." -t 0.001 -s 320x240 ".$name."",$out,$status);
-            $str = "ffmpeg -i " . $file . " -y -f mjpeg -ss 3 -t " . $time . " -s " . $resolution . " " . $name;
+            $str = "ffmpeg -i " . $file . " -y -f mjpeg -ss 0.6 -t " . $time . " -s " . $resolution . " " . $name;
             //echo $str."</br>";
             $result = system($str);
             return $result;

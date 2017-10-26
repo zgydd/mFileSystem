@@ -37,7 +37,18 @@ define('update.recoverLinkRecord', <<<SQL
 SQL
 );
 
+define('update.registerTokenList', <<<SQL
+    UPDATE md_stores_link SET token_list = :token_list WHERE open_id = :open_id
+SQL
+);
+
 define('select.linkRecordByMd5', <<<SQL
     SELECT * FROM md_stores_link WHERE file_md5 = :file_md5
+SQL
+);
+
+
+define('update.updateOpenId', <<<SQL
+    UPDATE md_stores_link SET open_id = :new_open_id WHERE open_id = :open_id
 SQL
 );
