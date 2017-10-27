@@ -23,6 +23,10 @@ class validate {
         
     }
 
+    public function noteOpenIdChanged($oldId, $newId) {
+        //IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!Note anyone who used the openId!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT
+    }
+
     public function getOpenId() {
         $openID = null;
         $max = strlen($this->_strPol_) - 1;

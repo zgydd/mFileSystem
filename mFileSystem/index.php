@@ -192,7 +192,7 @@ $router->add('/get_file', function() {
                 if (file_exists($theFilePath . $name)) {
                     rename($theFilePath . $name, $theFilePath . $newOpenID . '.' . $EXT);
                 }
-                //IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!Note anyone who used the openId!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT
+                $validate->noteOpenIdChanged($openId, $newOpenID);
             }
             $result->ReturnCode = '99999';
             $result->ErrorMessage = 'Token failed';
@@ -422,7 +422,7 @@ $router->add('/get_filestream', function() {
                 if (file_exists($theFilePath . $name)) {
                     rename($theFilePath . $name, $theFilePath . $newOpenID . '.' . $EXT);
                 }
-                //IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!Note anyone who used the openId!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT
+                $validate->noteOpenIdChanged($openId, $newOpenID);
             }
             $result->ReturnCode = '99999';
             $result->ErrorMessage = 'Token failed';
@@ -699,7 +699,7 @@ $router->add('/get_video_thumb', function() {
                 if (file_exists($theFilePath . $name)) {
                     rename($theFilePath . $name, $theFilePath . $newOpenID . '.' . $EXT);
                 }
-                //IMPORTANT!!!!!!!!!!!!!!!!!!!!!!!!Note anyone who used the openId!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!IMPORTANT
+                $validate->noteOpenIdChanged($openId, $newOpenID);
             }
             $result->ReturnCode = '99999';
             $result->ErrorMessage = 'Token failed';
