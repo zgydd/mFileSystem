@@ -13,7 +13,6 @@ define('_SHOWFILETYPE_', $showFiles);
 require_once 'classes/router.class.php';
 require_once 'classes/behavior.class.php';
 require_once 'classes/validate.class.php';
-require_once 'Config/SqlDef.php';
 require_once 'ZConnect/PDO.php';
 require_once 'Config/SqlDef.php';
 
